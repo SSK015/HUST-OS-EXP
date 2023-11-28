@@ -8,6 +8,7 @@
 #include "syscall.h"
 #include "pmm.h"
 #include "vmm.h"
+// #include "memlayout.h"
 #include "util/functions.h"
 
 #include "spike_interface/spike_utils.h"
@@ -67,8 +68,24 @@ void handle_user_page_fault(uint64 mcause, uint64 sepc, uint64 stval) {
       // dynamically increase application stack.
       // hint: first allocate a new physical page, and then, maps the new page to the
       // virtual address that causes the page fault.
-      panic( "You need to implement the operations that actually handle the page fault in lab2_3.\n" );
-
+      // void* pa = alloc_page();
+      // uint64 va = g_ufree_page;
+      // stval += PGSIZE;
+      // user_vm_map((pagetable_t)current->pagetable, stval, PGSIZE, (uint64)pa,
+      //       prot_to_type(PROT_WRITE | PROT_READ, 1));
+      // void* pa = alloc_page();
+      // uint64 va = stval;
+      // USER_STACK_TOP += PGSIZE;
+      g_ufree_page += PGSIZE;
+      user_vm_map((pagetable_t)current->pagetable, ROUNDDOWN(stval, PGSIZE), PGSIZE, (uint64)(alloc_page()),
+            prot_to_type(PROT_WRITE | PROT_READ, 1));
+      // uint64 va = stval;
+      // stval += PGSIZE;
+        // user_vm_map((pagetable_t)proc->pagetable, USER_STACK_TOP - PGSIZE, PGSIZE, user_stack,
+        //  prot_to_type(PROT_WRITE | PROT_READ, 1));
+// USER_STACK_TOP - PGSIZE
+      // user_vm_map((pagetable_t)current->pagetable, stval, PGSIZE, (uint64)pa, prot_to_type(PROT_WRITE | PROT_READ, 0));
+      // panic( "You need to implement the operations that actually handle the page fault in lab2_3.\n" );
       break;
     default:
       sprint("unknown page fault.\n");
