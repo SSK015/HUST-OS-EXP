@@ -8,7 +8,11 @@
 #include "syscall.h"
 #include "pmm.h"
 #include "vmm.h"
+<<<<<<< HEAD
 #include "sched.h"
+=======
+// #include "memlayout.h"
+>>>>>>> lab2_3_pagefault
 #include "util/functions.h"
 
 #include "spike_interface/spike_utils.h"
@@ -26,7 +30,12 @@ static void handle_syscall(trapframe *tf) {
   // kernel/syscall.c) to conduct real operations of the kernel side for a syscall.
   // IMPORTANT: return value should be returned to user app, or else, you will encounter
   // problems in later experiments!
-  panic( "call do_syscall to accomplish the syscall and lab1_1 here.\n" );
+  // char* data = "Hello world!\n";
+  // long data_ptr = (long)data;
+  // do_syscall(64,data_ptr,1,0,0,0,0,0);
+  // do_syscall(65,0,0,0,0,0,0,0);
+  tf->regs.a0 = do_syscall(tf->regs.a0, tf->regs.a1, tf->regs.a2, tf->regs.a3, tf->regs.a4, tf->regs.a5, tf->regs.a6, tf->regs.a7);
+  // panic( "call do_syscall to accomplish the syscall and lab1_1 here.\n" );
 
 }
 
@@ -39,9 +48,14 @@ static uint64 g_ticks = 0;
 void handle_mtimer_trap() {
   sprint("Ticks %d\n", g_ticks);
   // TODO (lab1_3): increase g_ticks to record this "tick", and then clear the "SIP"
+  g_ticks++;
+
   // field in sip register.
+  // write_csr
   // hint: use write_csr to disable the SIP_SSIP bit in sip.
-  panic( "lab1_3: increase g_ticks by one, and clear SIP field in sip register.\n" );
+  int aaa = read_csr(sip);
+  write_csr(sip, ~(aaa & 2));
+  // panic( "lab1_3: increase g_ticks by one, and clear SIP field in sip register.\n" );
 
 }
 
@@ -58,8 +72,24 @@ void handle_user_page_fault(uint64 mcause, uint64 sepc, uint64 stval) {
       // dynamically increase application stack.
       // hint: first allocate a new physical page, and then, maps the new page to the
       // virtual address that causes the page fault.
-      panic( "You need to implement the operations that actually handle the page fault in lab2_3.\n" );
-
+      // void* pa = alloc_page();
+      // uint64 va = g_ufree_page;
+      // stval += PGSIZE;
+      // user_vm_map((pagetable_t)current->pagetable, stval, PGSIZE, (uint64)pa,
+      //       prot_to_type(PROT_WRITE | PROT_READ, 1));
+      // void* pa = alloc_page();
+      // uint64 va = stval;
+      // USER_STACK_TOP += PGSIZE;
+      g_ufree_page += PGSIZE;
+      user_vm_map((pagetable_t)current->pagetable, ROUNDDOWN(stval, PGSIZE), PGSIZE, (uint64)(alloc_page()),
+            prot_to_type(PROT_WRITE | PROT_READ, 1));
+      // uint64 va = stval;
+      // stval += PGSIZE;
+        // user_vm_map((pagetable_t)proc->pagetable, USER_STACK_TOP - PGSIZE, PGSIZE, user_stack,
+        //  prot_to_type(PROT_WRITE | PROT_READ, 1));
+// USER_STACK_TOP - PGSIZE
+      // user_vm_map((pagetable_t)current->pagetable, stval, PGSIZE, (uint64)pa, prot_to_type(PROT_WRITE | PROT_READ, 0));
+      // panic( "You need to implement the operations that actually handle the page fault in lab2_3.\n" );
       break;
     default:
       sprint("unknown page fault.\n");
