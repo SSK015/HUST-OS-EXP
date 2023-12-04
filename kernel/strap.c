@@ -8,11 +8,10 @@
 #include "syscall.h"
 #include "pmm.h"
 #include "vmm.h"
-<<<<<<< HEAD
+
 #include "sched.h"
-=======
 // #include "memlayout.h"
->>>>>>> lab2_3_pagefault
+
 #include "util/functions.h"
 
 #include "spike_interface/spike_utils.h"
@@ -80,7 +79,7 @@ void handle_user_page_fault(uint64 mcause, uint64 sepc, uint64 stval) {
       // void* pa = alloc_page();
       // uint64 va = stval;
       // USER_STACK_TOP += PGSIZE;
-      g_ufree_page += PGSIZE;
+      // g_ufree_page += PGSIZE;
       user_vm_map((pagetable_t)current->pagetable, ROUNDDOWN(stval, PGSIZE), PGSIZE, (uint64)(alloc_page()),
             prot_to_type(PROT_WRITE | PROT_READ, 1));
       // uint64 va = stval;
