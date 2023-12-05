@@ -11,6 +11,7 @@
  * The disk layout of rfs is similar to the fs in xv6.
  */
 #include "rfs.h"
+// #include <stdio.h>
 
 #include "pmm.h"
 #include "ramdev.h"
@@ -221,6 +222,8 @@ int rfs_add_direntry(struct vinode *dir, const char *name, int inum) {
     sprint("rfs_add_direntry: failed to read block %d!\n", n_block);
     return -1;
   }
+
+  // sprint("sssss : %s\n", name);
 
   // prepare iobuffer
   char *addr = (char *)rdev->iobuffer + dir->size % RFS_BLKSIZE;
@@ -513,8 +516,8 @@ struct vinode *rfs_create(struct vinode *parent, struct dentry *sub_dentry) {
 
   // DO NOT REMOVE ANY CODE BELOW.
   // allocate a free block for the file
-  free_dinode->addrs[0] = rfs_alloc_block(parent->sb);
 
+  free_dinode->addrs[0] = rfs_alloc_block(parent->sb);
   // **  write the disk inode of file being created to disk
   rfs_write_dinode(rdev, free_dinode, free_inum);
   free_page(free_dinode);
@@ -619,12 +622,17 @@ int rfs_link(struct vinode *parent, struct dentry *sub_dentry,
   //
   // hint: to accomplish this experiment, you need to:
   // link_node->nlinks++;
-  // parent->nlinks++;
+  // parent->nlinks++; spike ./obj/riscv-pke ./obj/app_hardlink
+  sub_dentry->dentry_inode->nlinks++;
+  struct rfs_device *rdev = rfs_device_list[link_node->sb->s_dev->dev_id];
+  struct rfs_dinode *dinode = rfs_read_dinode(rdev, link_node->inum);
+  dinode->nlinks++;
+  // link_node->nlinks++;
+  rfs_write_dinode(rdev, dinode, link_node->inum);
 
   rfs_add_direntry(parent, sub_dentry->name, link_node->inum);
-  // parent->nlinks++;
   return rfs_write_back_vinode(parent);
-
+  // return 0;
   // 1) increase the link count of the file to be hard-linked;
   // 2) append the new (link) file as a dentry to its parent directory; you can
   // use
@@ -829,9 +837,12 @@ int rfs_readdir(struct vinode *dir_vinode, struct dir *dir, int *offset) {
   // proper members of "dir", more specifically, dir->name and dir->inum. note:
   // DO NOT DELETE CODE BELOW PANIC.
 
-  struct rfs_direntry *new_dir = dir_cache->dir_base_addr;
-  memcpy(dir->name, new_dir->name, RFS_MAX_FILE_NAME_LEN);
-  dir->inum = new_dir->inum;
+  // struct rfs_direntry *new_dir = dir_cache->dir_base_addr;
+  memcpy(dir->name, p_direntry->name, RFS_MAX_FILE_NAME_LEN);
+  // dir->inum = new_dir->inum;
+  dir->inum = p_direntry->inum;
+  // strcpy(dir->name, p_direntry->name);
+
   // closedir_u()
   // panic("You need to implement the code for reading a directory
   // entry of rfs in lab4_2.\n" );
