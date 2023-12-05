@@ -9,7 +9,7 @@ void ls(char *path) {
   printu("[name]               [inode_num]\n");
   struct dir dir;
   int width = 20;
-  while(readdir_u(dir_fd, &dir) == 0) {
+  while (readdir_u(dir_fd, &dir) == 0) {
     // we do not have %ms :(
     char name[width + 1];
     memset(name, ' ', width + 1);
@@ -18,8 +18,7 @@ void ls(char *path) {
       strcpy(name, dir.name);
       name[strlen(dir.name)] = ' ';
       printu("%s %d\n", name, dir.inum);
-    }
-    else
+    } else
       printu("%s %d\n", dir.name, dir.inum);
   }
   printu("------------------------------\n");
@@ -29,11 +28,11 @@ void ls(char *path) {
 int main(int argc, char *argv[]) {
   char str[] = "hello world";
   int fd;
-  
+
   printu("\n======== Test 1: open and read dir ========\n");
 
   ls("/RAMDISK0");
-  
+
   printu("\n======== Test 2: make dir ========\n");
 
   mkdir_u("/RAMDISK0/sub_dir");

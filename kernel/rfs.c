@@ -71,7 +71,7 @@ int rfs_format_dev(struct device *dev) {
   super->ninodes = RFS_BLKSIZE / RFS_INODESIZE * RFS_MAX_INODE_BLKNUM;
 
   // write the superblock to RAM Disk0
-  if (rfs_w1block(rdev, RFS_BLK_OFFSET_SUPER) != 0)  // write to device
+  if (rfs_w1block(rdev, RFS_BLK_OFFSET_SUPER) != 0) // write to device
     panic("RFS: failed to write superblock!\n");
 
   // ** second, set up the inodes and write them to RAM disk
@@ -109,10 +109,10 @@ int rfs_format_dev(struct device *dev) {
   // ** third, write freemap to disk
   int *freemap = (int *)rdev->iobuffer;
   memset(freemap, 0, RFS_BLKSIZE);
-  freemap[0] = 1;  // the first data block is used for root directory
+  freemap[0] = 1; // the first data block is used for root directory
 
   // write the bitmap to RAM Disk0
-  if (rfs_w1block(rdev, RFS_BLK_OFFSET_BITMAP) != 0) {  // write to device
+  if (rfs_w1block(rdev, RFS_BLK_OFFSET_BITMAP) != 0) { // write to device
     sprint("RFS: failed to write bitmap!\n");
     return -1;
   }
@@ -148,7 +148,8 @@ struct rfs_dinode *rfs_read_dinode(struct rfs_device *rdev, int n_inode) {
   int offset = n_inode % (RFS_BLKSIZE / RFS_INODESIZE);
 
   // call ramdisk_read defined in dev.c
-  if (dop_read(rdev, n_block) != 0) return NULL;
+  if (dop_read(rdev, n_block) != 0)
+    return NULL;
   struct rfs_dinode *dinode = (struct rfs_dinode *)alloc_page();
   memcpy(dinode, (char *)rdev->iobuffer + offset * RFS_INODESIZE,
          sizeof(struct rfs_dinode));
@@ -183,13 +184,14 @@ int rfs_alloc_block(struct super_block *sb) {
   // think of s_fs_info as freemap information
   int *freemap = (int *)sb->s_fs_info;
   for (int block = 0; block < sb->nblocks; ++block) {
-    if (freemap[block] == 0) {  // find a free block
+    if (freemap[block] == 0) { // find a free block
       freemap[block] = 1;
       free_block = RFS_BLK_OFFSET_FREE + block;
       break;
     }
   }
-  if (free_block == -1) panic("rfs_alloc_block: no more free block!\n");
+  if (free_block == -1)
+    panic("rfs_alloc_block: no more free block!\n");
   return free_block;
 }
 
@@ -307,7 +309,8 @@ ssize_t rfs_read(struct vinode *f_inode, char *r_buf, ssize_t len,
   if (f_inode->size < *offset)
     panic("rfs_read:offset should less than file size!");
 
-  if (f_inode->size < (*offset + len)) len = f_inode->size - *offset;
+  if (f_inode->size < (*offset + len))
+    len = f_inode->size - *offset;
 
   char buffer[len + 1];
 
@@ -393,7 +396,7 @@ ssize_t rfs_write(struct vinode *f_inode, const char *w_buf, ssize_t len,
   if (writetimes >= 0) {
     // write complete blocks
     while (writetimes != 0) {
-      if (block_offset == f_inode->blocks) {  // need to create new block
+      if (block_offset == f_inode->blocks) { // need to create new block
         // allocate a free block for the file
         f_inode->addrs[block_offset] = rfs_alloc_block(f_inode->sb);
         f_inode->blocks++;
@@ -443,11 +446,11 @@ struct vinode *rfs_lookup(struct vinode *parent, struct dentry *sub_dentry) {
 
   // browse the dir entries contained in a directory file
   for (int i = 0; i < total_direntrys; ++i) {
-    if (i % one_block_direntrys == 0) {  // read in the disk block at boundary
+    if (i % one_block_direntrys == 0) { // read in the disk block at boundary
       rfs_r1block(rdev, parent->addrs[i / one_block_direntrys]);
       p_direntry = (struct rfs_direntry *)rdev->iobuffer;
     }
-    if (strcmp(p_direntry->name, sub_dentry->name) == 0) {  // found
+    if (strcmp(p_direntry->name, sub_dentry->name) == 0) { // found
       child_vinode = rfs_alloc_vinode(parent->sb);
       child_vinode->inum = p_direntry->inum;
       if (rfs_update_vinode(child_vinode) != 0)
@@ -472,7 +475,7 @@ struct vinode *rfs_create(struct vinode *parent, struct dentry *sub_dentry) {
   for (int i = 0; i < (RFS_BLKSIZE / RFS_INODESIZE * RFS_MAX_INODE_BLKNUM);
        ++i) {
     free_dinode = rfs_read_dinode(rdev, i);
-    if (free_dinode->type == R_FREE) {  // found
+    if (free_dinode->type == R_FREE) { // found
       free_inum = i;
       break;
     }
@@ -480,19 +483,31 @@ struct vinode *rfs_create(struct vinode *parent, struct dentry *sub_dentry) {
   }
 
   if (free_dinode == NULL)
-    panic("rfs_create: no more free disk inode, we cannot create file.\n" );
+    panic("rfs_create: no more free disk inode, we cannot create file.\n");
 
   // initialize the states of the file being created
 
-  // TODO (lab4_1): implement the code for populating the disk inode (free_dinode) 
-  // of a new file being created.
+  // TODO (lab4_1): implement the code for populating the disk inode
+  // (free_dinode) of a new file being created.
+  //   struct rfs_dinode {
+  //   int size;                      // size of the file (in bytes)
+  //   int type;                      // one of R_FREE, R_FILE, R_DIR
+  //   int nlinks;                    // number of hard links to this file
+  //   int blocks;                    // number of blocks
+  //   int addrs[RFS_DIRECT_BLKNUM];  // direct blocks
+  // };
   // hint:  members of free_dinode to be filled are:
+  free_dinode->size = 0;
+  free_dinode->type = R_FILE;
+  free_dinode->nlinks = 1;
+  free_dinode->blocks = 1;
   // size, should be zero for a new file.
   // type, see kernel/rfs.h and find the type for a rfs file.
   // nlinks, i.e., the number of links.
   // blocks, i.e., its block count.
   // Note: DO NOT DELETE CODE BELOW PANIC.
-  panic("You need to implement the code of populating a disk inode in lab4_1.\n" );
+  // panic("You need to implement the code of populating a disk inode in
+  // lab4_1.\n" );
 
   // DO NOT REMOVE ANY CODE BELOW.
   // allocate a free block for the file
@@ -523,29 +538,30 @@ struct vinode *rfs_create(struct vinode *parent, struct dentry *sub_dentry) {
 // LSEEK_CUR: set the file pointer to the current offset plus the offset
 // return 0 if success, otherwise return -1
 //
-int rfs_lseek(struct vinode *f_inode, ssize_t new_offset, int whence, int *offset) {
+int rfs_lseek(struct vinode *f_inode, ssize_t new_offset, int whence,
+              int *offset) {
   int file_size = f_inode->size;
 
   switch (whence) {
-    case LSEEK_SET:
-      if (new_offset < 0 || new_offset > file_size) {
-        sprint("rfs_lseek: invalid offset!\n");
-        return -1;
-      }
-      *offset = new_offset;
-      break;
-    case LSEEK_CUR:
-      if (*offset + new_offset < 0 || *offset + new_offset > file_size) {
-        sprint("rfs_lseek: invalid offset!\n");
-        return -1;
-      }
-      *offset += new_offset;
-      break;
-    default:
-      sprint("rfs_lseek: invalid whence!\n");
+  case LSEEK_SET:
+    if (new_offset < 0 || new_offset > file_size) {
+      sprint("rfs_lseek: invalid offset!\n");
       return -1;
+    }
+    *offset = new_offset;
+    break;
+  case LSEEK_CUR:
+    if (*offset + new_offset < 0 || *offset + new_offset > file_size) {
+      sprint("rfs_lseek: invalid offset!\n");
+      return -1;
+    }
+    *offset += new_offset;
+    break;
+  default:
+    sprint("rfs_lseek: invalid whence!\n");
+    return -1;
   }
-  
+
   return 0;
 }
 
@@ -561,7 +577,7 @@ int rfs_disk_stat(struct vinode *vinode, struct istat *istat) {
   }
 
   istat->st_inum = 1;
-  istat->st_inum = vinode->inum;  // get inode number from vinode
+  istat->st_inum = vinode->inum; // get inode number from vinode
 
   istat->st_size = dinode->size;
   istat->st_type = dinode->type;
@@ -620,9 +636,9 @@ int rfs_hook_closedir(struct vinode *dir_vinode, struct dentry *dentry) {
 
 //
 // read a directory entry from the directory "dir", and the "offset" indicate
-// the position of the entry to be read. if offset is 0, the first entry is read,
-// if offset is 1, the second entry is read, and so on.
-// return: 0 on success, -1 when there are no more entry (end of the list).
+// the position of the entry to be read. if offset is 0, the first entry is
+// read, if offset is 1, the second entry is read, and so on. return: 0 on
+// success, -1 when there are no more entry (end of the list).
 //
 int rfs_readdir(struct vinode *dir_vinode, struct dir *dir, int *offset) {
   int total_direntrys = dir_vinode->size / sizeof(struct rfs_direntry);
@@ -640,13 +656,18 @@ int rfs_readdir(struct vinode *dir_vinode, struct dir *dir, int *offset) {
   struct rfs_direntry *p_direntry = dir_cache->dir_base_addr + direntry_index;
 
   // TODO (lab4_2): implement the code to read a directory entry.
-  // hint: in the above code, we had found the directory entry that located at the
-  // *offset, and used p_direntry to point it.
-  // in the remaining processing, we need to return our discovery.
-  // the method of returning is to popular proper members of "dir", more specifically,
-  // dir->name and dir->inum.
-  // note: DO NOT DELETE CODE BELOW PANIC.
-  panic("You need to implement the code for reading a directory entry of rfs in lab4_2.\n" );
+  // hint: in the above code, we had found the directory entry that located at
+  // the *offset, and used p_direntry to point it. in the remaining processing,
+  // we need to return our discovery. the method of returning is to popular
+  // proper members of "dir", more specifically, dir->name and dir->inum. note:
+  // DO NOT DELETE CODE BELOW PANIC.
+
+  struct rfs_direntry *new_dir = dir_cache->dir_base_addr;
+  memcpy(dir->name, new_dir->name, RFS_MAX_FILE_NAME_LEN);
+  dir->inum = new_dir->inum;
+  // closedir_u()
+  // panic("You need to implement the code for reading a directory
+  // entry of rfs in lab4_2.\n" );
 
   // DO NOT DELETE CODE BELOW.
   (*offset)++;
@@ -663,9 +684,10 @@ struct vinode *rfs_mkdir(struct vinode *parent, struct dentry *sub_dentry) {
   // ** find a free disk inode to store the file that is going to be created
   struct rfs_dinode *free_dinode = NULL;
   int free_inum = 0;
-  for (int i = 0; i < (RFS_BLKSIZE / RFS_INODESIZE * RFS_MAX_INODE_BLKNUM); i++) {
+  for (int i = 0; i < (RFS_BLKSIZE / RFS_INODESIZE * RFS_MAX_INODE_BLKNUM);
+       i++) {
     free_dinode = rfs_read_dinode(rdev, i);
-    if (free_dinode->type == R_FREE) {  // found
+    if (free_dinode->type == R_FREE) { // found
       free_inum = i;
       break;
     }
@@ -673,7 +695,7 @@ struct vinode *rfs_mkdir(struct vinode *parent, struct dentry *sub_dentry) {
   }
 
   if (free_dinode == NULL)
-    panic( "rfs_mkdir: no more free disk inode, we cannot create directory.\n" );
+    panic("rfs_mkdir: no more free disk inode, we cannot create directory.\n");
 
   // initialize the states of the file being created
   free_dinode->size = 0;
@@ -721,7 +743,7 @@ struct super_block *rfs_get_superblock(struct device *dev) {
   sb->ninodes = d_sb.ninodes;
   sb->s_dev = dev;
 
-  if( sb->magic != RFS_MAGIC ) 
+  if (sb->magic != RFS_MAGIC)
     panic("rfs_get_superblock: wrong ramdisk device!\n");
 
   // build root dentry and root inode
