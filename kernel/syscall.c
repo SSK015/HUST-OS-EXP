@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 #include "pmm.h"
+#include "proc_file.h"
 #include "process.h"
 #include "sched.h"
 #include "string.h"
@@ -13,11 +14,6 @@
 #include "util/functions.h"
 #include "util/types.h"
 #include "vmm.h"
-<<<<<<< HEAD
-#include "sched.h"
-#include "proc_file.h"
-=======
->>>>>>> lab3_3_rrsched
 
 #include "spike_interface/spike_utils.h"
 
@@ -111,7 +107,8 @@ ssize_t sys_user_yield() {
 // open file
 //
 ssize_t sys_user_open(char *pathva, int flags) {
-  char* pathpa = (char*)user_va_to_pa((pagetable_t)(current->pagetable), pathva);
+  char *pathpa =
+      (char *)user_va_to_pa((pagetable_t)(current->pagetable), pathva);
   return do_open(pathpa, flags);
 }
 
@@ -126,7 +123,9 @@ ssize_t sys_user_read(int fd, char *bufva, uint64 count) {
     uint64 off = addr - ROUNDDOWN(addr, PGSIZE);
     uint64 len = count - i < PGSIZE - off ? count - i : PGSIZE - off;
     uint64 r = do_read(fd, (char *)pa + off, len);
-    i += r; if (r < len) return i;
+    i += r;
+    if (r < len)
+      return i;
   }
   return count;
 }
@@ -142,7 +141,9 @@ ssize_t sys_user_write(int fd, char *bufva, uint64 count) {
     uint64 off = addr - ROUNDDOWN(addr, PGSIZE);
     uint64 len = count - i < PGSIZE - off ? count - i : PGSIZE - off;
     uint64 r = do_write(fd, (char *)pa + off, len);
-    i += r; if (r < len) return i;
+    i += r;
+    if (r < len)
+      return i;
   }
   return count;
 }
@@ -158,7 +159,8 @@ ssize_t sys_user_lseek(int fd, int offset, int whence) {
 // read vinode
 //
 ssize_t sys_user_stat(int fd, struct istat *istat) {
-  struct istat * pistat = (struct istat *)user_va_to_pa((pagetable_t)(current->pagetable), istat);
+  struct istat *pistat =
+      (struct istat *)user_va_to_pa((pagetable_t)(current->pagetable), istat);
   return do_stat(fd, pistat);
 }
 
@@ -166,16 +168,15 @@ ssize_t sys_user_stat(int fd, struct istat *istat) {
 // read disk inode
 //
 ssize_t sys_user_disk_stat(int fd, struct istat *istat) {
-  struct istat * pistat = (struct istat *)user_va_to_pa((pagetable_t)(current->pagetable), istat);
+  struct istat *pistat =
+      (struct istat *)user_va_to_pa((pagetable_t)(current->pagetable), istat);
   return do_disk_stat(fd, pistat);
 }
 
 //
 // close file
 //
-ssize_t sys_user_close(int fd) {
-  return do_close(fd);
-}
+ssize_t sys_user_close(int fd) { return do_close(fd); }
 
 //
 // [a0]: the syscall number; [a1] ... [a7]: arguments to the syscalls.
@@ -184,38 +185,6 @@ ssize_t sys_user_close(int fd) {
 long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, long a6,
                 long a7) {
   switch (a0) {
-<<<<<<< HEAD
-    case SYS_user_print:
-      return sys_user_print((const char*)a1, a2);
-    case SYS_user_exit:
-      return sys_user_exit(a1);
-    // added @lab2_2
-    case SYS_user_allocate_page:
-      return sys_user_allocate_page();
-    case SYS_user_free_page:
-      return sys_user_free_page(a1);
-    case SYS_user_fork:
-      return sys_user_fork();
-    case SYS_user_yield:
-      return sys_user_yield();
-    // added @lab4_1
-    case SYS_user_open:
-      return sys_user_open((char *)a1, a2);
-    case SYS_user_read:
-      return sys_user_read(a1, (char *)a2, a3);
-    case SYS_user_write:
-      return sys_user_write(a1, (char *)a2, a3);
-    case SYS_user_lseek:
-      return sys_user_lseek(a1, a2, a3);
-    case SYS_user_stat:
-      return sys_user_stat(a1, (struct istat *)a2);
-    case SYS_user_disk_stat:
-      return sys_user_disk_stat(a1, (struct istat *)a2);
-    case SYS_user_close:
-      return sys_user_close(a1);
-    default:
-      panic("Unknown syscall %ld \n", a0);
-=======
   case SYS_user_print:
     return sys_user_print((const char *)a1, a2);
   case SYS_user_exit:
@@ -229,8 +198,22 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, long a6,
     return sys_user_fork();
   case SYS_user_yield:
     return sys_user_yield();
+  // added @lab4_1
+  case SYS_user_open:
+    return sys_user_open((char *)a1, a2);
+  case SYS_user_read:
+    return sys_user_read(a1, (char *)a2, a3);
+  case SYS_user_write:
+    return sys_user_write(a1, (char *)a2, a3);
+  case SYS_user_lseek:
+    return sys_user_lseek(a1, a2, a3);
+  case SYS_user_stat:
+    return sys_user_stat(a1, (struct istat *)a2);
+  case SYS_user_disk_stat:
+    return sys_user_disk_stat(a1, (struct istat *)a2);
+  case SYS_user_close:
+    return sys_user_close(a1);
   default:
     panic("Unknown syscall %ld \n", a0);
->>>>>>> lab3_3_rrsched
   }
 }

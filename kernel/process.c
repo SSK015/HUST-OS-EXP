@@ -153,14 +153,12 @@ process *alloc_process() {
       "in alloc_proc. user frame 0x%lx, user stack 0x%lx, user kstack 0x%lx \n",
       procs[i].trapframe, procs[i].trapframe->regs.sp, procs[i].kstack);
 
-<<<<<<< HEAD
   // initialize files_struct
   procs[i].pfiles = init_proc_file_management();
   sprint("in alloc_proc. build proc_file_management successfully.\n");
 
-=======
   procs[i].total_mapped_region = 3;
->>>>>>> lab3_3_rrsched
+
   // return after initialization.
   return &procs[i];
 }
