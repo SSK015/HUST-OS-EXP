@@ -8,7 +8,7 @@
 #include "syscall.h"
 #include "pmm.h"
 #include "vmm.h"
-// #include "memlayout.h"
+#include "memlayout.h"
 #include "util/functions.h"
 
 #include "spike_interface/spike_utils.h"
@@ -76,9 +76,23 @@ void handle_user_page_fault(uint64 mcause, uint64 sepc, uint64 stval) {
       // void* pa = alloc_page();
       // uint64 va = stval;
       // USER_STACK_TOP += PGSIZE;
+      // if ()
+      // if ()
+      // if (user_va_to_pa())
+      // void *pa = user_va_to_pa((pagetable_t)current->pagetable, (void*)(ROUNDDOWN(stval, PGSIZE)));
+      if (stval < USER_STACK_TOP && stval > PGSIZE * 1024 + 4096) {
+        // sprint("legal\n");
+        
+      } else {
+        // sprint("illegal\n");
+        panic( "this address is not available!" );
+      }
+      // sprint("%lx\n", PGSIZE * 1024 + 4096);
       g_ufree_page += PGSIZE;
       user_vm_map((pagetable_t)current->pagetable, ROUNDDOWN(stval, PGSIZE), PGSIZE, (uint64)(alloc_page()),
             prot_to_type(PROT_WRITE | PROT_READ, 1));
+      // if (user_va_to_pa())
+
       // uint64 va = stval;
       // stval += PGSIZE;
         // user_vm_map((pagetable_t)proc->pagetable, USER_STACK_TOP - PGSIZE, PGSIZE, user_stack,
@@ -118,11 +132,15 @@ void smode_trap_handler(void) {
     case CAUSE_MTIMER_S_TRAP:
       handle_mtimer_trap();
       break;
-    case CAUSE_STORE_PAGE_FAULT:
     case CAUSE_LOAD_PAGE_FAULT:
+      // sprint("Come here\n");
+      handle_user_page_fault(cause, read_csr(sepc), read_csr(stval));
+      break;
+    case CAUSE_STORE_PAGE_FAULT:
       // the address of missing page is stored in stval
       // call handle_user_page_fault to process page faults
       handle_user_page_fault(cause, read_csr(sepc), read_csr(stval));
+      // sprint("Come here\n");
       break;
     default:
       sprint("smode_trap_handler(): unexpected scause %p\n", read_csr(scause));
