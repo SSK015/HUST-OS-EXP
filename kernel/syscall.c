@@ -17,6 +17,8 @@
 
 #include "spike_interface/spike_utils.h"
 
+int count = 0;
+
 //
 // implement the SYS_user_print syscall
 //
@@ -107,9 +109,37 @@ ssize_t sys_user_yield() {
 // open file
 //
 ssize_t sys_user_open(char *pathva, int flags) {
-  char *pathpa =
+  char *paPath =
       (char *)user_va_to_pa((pagetable_t)(current->pagetable), pathva);
-  return do_open(pathpa, flags);
+  char relatPath[30];
+  strcpy(relatPath, paPath);
+  // strcpy(curDirName, current->pfiles->cwd->name);
+
+    // Get Absolute Path By merging Relative Path and Current Path.
+  // char absolPath[60];
+  // strcpy(absolPath, curDirName);
+  // strcat(absolPath, relatPath);
+  // sprint("%s\n", relatPath);
+  char result[60];
+  if (relatPath[0] == '.' && relatPath[1] == '.') {
+    // parent
+    if (current->pfiles->cwd->parent) {
+      strcpy(result,current->pfiles->cwd->parent->name);
+      if(!strcmp(result,"/")) *result = 0; 
+      strcat(result, paPath + 2);
+    } else {
+      strcpy(result,"/");
+    }
+    // strcpy()
+  } else if (relatPath[0] == '.') {
+    strcpy(result, current->pfiles->cwd->name);
+    if(!strcmp(result, "/")) *result = 0; //ignore the "/" 
+    strcat(result, paPath + 1);
+  } else {
+    strcpy(result, paPath);
+  }
+
+  return do_open(result, flags);
 }
 
 //
@@ -230,6 +260,66 @@ ssize_t sys_user_unlink(char *vfn) {
   return do_unlink(pfn);
 }
 
+ssize_t sys_user_rcwd(char *path) {
+  if((ssize_t)strcpy((char*)user_va_to_pa((pagetable_t)current->pagetable,path), current->pfiles->cwd->name) == 0)
+    return -1;
+  return 0;
+}
+
+ssize_t sys_user_ccwd(char *path) {
+// Get Relative Path and current Path.
+  char relatPath[30];
+  char curDirName[30];
+  char *paPath = (char *)user_va_to_pa((pagetable_t)(current->pagetable), path);
+  strcpy(relatPath, paPath);
+  strcpy(curDirName, current->pfiles->cwd->name);
+
+    // Get Absolute Path By merging Relative Path and Current Path.
+  // char absolPath[60];
+  // strcpy(absolPath, curDirName);
+  // strcat(absolPath, relatPath);
+  // sprint("%s\n", curDirName);
+  int curLen = strlen(curDirName);
+  // sprint("%d\n", curLen);
+  // if (curDirName[curLen - 1] == '/' && relatPath[0] == '/') {
+
+  // }
+  char result[60];
+  if (relatPath[0] == '.' && relatPath[1] == '.') {
+    // parent
+    if (current->pfiles->cwd->parent) {
+      strcpy(result,current->pfiles->cwd->parent->name);
+      if(!strcmp(result,"/")) *result = 0; 
+      strcat(result, paPath + 2);
+    } else {
+      strcpy(result,"/");
+    }
+    // strcpy()
+  } else if (relatPath[0] == '.') {
+    strcpy(result, curDirName);
+    if(!strcmp(result, "/")) *result = 0; 
+    strcat(result, paPath + 1);
+  } else {
+    strcpy(result, paPath);
+  }
+  // sprint("%s\n", absolPath);
+  // sprint("%s\n", relatPath);
+  // sprint("%s\n", curDirName);
+  // int ans = do_opendir(result);
+  // sprint("%d\n", ans);
+  // if (strcmp(relatPath, "./RAMDISK0") == 0 && count == 0) {
+  //   // sprint("failed\n");
+  //   do_opendir(result);
+  //   count++;
+  // }
+  // return -1;
+  if ((ssize_t)strcpy(current->pfiles->cwd->name, result) == 0)
+    return -1;
+  return 0;
+
+}
+
+
 //
 // [a0]: the syscall number; [a1] ... [a7]: arguments to the syscalls.
 // returns the code of success, (e.g., 0 means success, fail for otherwise)
@@ -279,6 +369,10 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, long a6,
     return sys_user_link((char *)a1, (char *)a2);
   case SYS_user_unlink:
     return sys_user_unlink((char *)a1);
+  case SYS_user_rcwd:
+    return sys_user_rcwd((char *)a1);
+  case SYS_user_ccwd:
+    return sys_user_ccwd((char *)a1);
   default:
     panic("Unknown syscall %ld \n", a0);
   }

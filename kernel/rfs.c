@@ -505,7 +505,7 @@ struct vinode *rfs_create(struct vinode *parent, struct dentry *sub_dentry) {
   free_dinode->size = 0;
   free_dinode->type = R_FILE;
   free_dinode->nlinks = 1;
-  free_dinode->blocks = 1;
+  free_dinode->blocks = 0;
   // size, should be zero for a new file.
   // type, see kernel/rfs.h and find the type for a rfs file.
   // nlinks, i.e., the number of links.
@@ -841,13 +841,6 @@ int rfs_readdir(struct vinode *dir_vinode, struct dir *dir, int *offset) {
   memcpy(dir->name, p_direntry->name, RFS_MAX_FILE_NAME_LEN);
   // dir->inum = new_dir->inum;
   dir->inum = p_direntry->inum;
-  // strcpy(dir->name, p_direntry->name);
-
-  // closedir_u()
-  // panic("You need to implement the code for reading a directory
-  // entry of rfs in lab4_2.\n" );
-
-  // DO NOT DELETE CODE BELOW.
   (*offset)++;
   return 0;
 }

@@ -79,7 +79,7 @@ typedef struct process_t {
   // heap management
   process_heap_manager user_heap;
 
-  // process id
+  // process idy
   uint64 pid;
   // process status
   int status;

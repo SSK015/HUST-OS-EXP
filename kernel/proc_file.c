@@ -167,8 +167,10 @@ int do_close(int fd) {
 //
 int do_opendir(char *pathname) {
   struct file *opened_file = NULL;
-  if ((opened_file = vfs_opendir(pathname)) == NULL) return -1;
-
+  if ((opened_file = vfs_opendir(pathname)) == NULL) {
+    // sprint("Not exist\n");
+    return -1;
+  }
   int fd = 0;
   struct file *pfile;
   for (fd = 0; fd < MAX_FILES; ++fd) {
