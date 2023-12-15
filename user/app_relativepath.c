@@ -1,4 +1,4 @@
-#include "user_lib.h"
+ #include "user_lib.h"
 #include "util/string.h"
 #include "util/types.h"
 
@@ -27,24 +27,7 @@ int main(int argc, char *argv[]) {
   printu("change current directory to ./RAMDISK0\n");
   pwd();
 
-  printu("\n======== Test 2: write/read file by relative path  ========\n");
-  printu("write: ./ramfile\n");
-
-  fd = open("./ramfile", O_RDWR | O_CREAT);
-  printu("file descriptor fd: %d\n", fd);
-
-  write_u(fd, str, strlen(str));
-  printu("write content: \n%s\n", str);
-  close(fd);
-
-  fd = open("./ramfile", O_RDWR);
-  printu("read: ./ramfile\n");
-
-  read_u(fd, buf, MAXBUF);
-  printu("read content: \n%s\n", buf);
-  close(fd);
-
-  printu("\n======== Test 3: Go to parent directory  ========\n");
+  printu("\n======== Test 2: Go to parent directory  ========\n");
 
   pwd();
   cd("..");
@@ -59,6 +42,26 @@ int main(int argc, char *argv[]) {
   read_u(fd, buf, MAXBUF);
   printu("read content: \n%s\n", buf);
 
+  close(fd);
+
+  printu("\n======== Test 3: write/read file by relative path  ========\n");
+  cd("./RAMDISK0");
+  printu("change current directory to ./RAMDISK0\n");
+
+  printu("write: ./ramfile\n");
+
+  fd = open("./ramfile", O_RDWR | O_CREAT);
+  printu("file descriptor fd: %d\n", fd);
+
+  write_u(fd, str, strlen(str));
+  printu("write content: \n%s\n", str);
+  close(fd);
+
+  fd = open("./ramfile", O_RDWR);
+  printu("read: ./ramfile\n");
+
+  read_u(fd, buf, MAXBUF);
+  printu("read content: \n%s\n", buf);
   close(fd);
 
   printu("\nAll tests passed!\n\n");
