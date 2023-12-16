@@ -217,6 +217,9 @@ int do_fork(process *parent) {
       child->mapped_info[child->total_mapped_region].seg_type = CODE_SEGMENT;
       child->total_mapped_region++;
       break;
+    case DATA_SEGMENT:
+
+      break;
     }
   }
 
