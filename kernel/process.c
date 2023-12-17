@@ -251,29 +251,61 @@ int do_fork(process *parent) {
 
 
 int do_wait(int pid) {
+  // int found = 0;
+  // if (pid == -1) {
+  //   for (int i = 0; i < NPROC; ++i) {
+  //     if (procs[i].parent == current && procs->status == ZOMBIE) {
+  //       procs[i].status = FREE;
+  //       return i;
+  //     }
+  //   }
+  //   return -1;
+  // } else if (pid > 0 && pid < NPROC && procs[pid].parent == current) {
+  //   if (procs[pid].status == ZOMBIE) {
+  //     procs[pid].status = FREE;
+  //     return pid;
+  //   }
+  //   // else {
+  //     insert_to_blocked_queue(current);
+  //     schedule();
+  //     return -2;
+  //   // }
+  // } else {
+  //   return -1;
+  // }
+  // return 0;
   int found = 0;
   if (pid == -1) {
-    for (int i = 0; i < NPROC; ++i) {
-      if (procs[i].parent == current && procs->status == ZOMBIE) {
-        procs[i].status = FREE;
-        return i;
+    for (int i = 0; i < NPROC; i++)
+      if (procs[i].parent == current) {
+        found = 1;
+          if (procs[i].status == ZOMBIE) {
+          procs[i].status = FREE;
+          return i;
+          }
       }
-    }
-    return -1;
-  } else if (pid > 0 && pid < NPROC && procs[pid].parent == current) {
-    if (procs[pid].status == ZOMBIE) {
-      procs[pid].status = FREE;
-      return pid;
-    }
-    // else {
+    if (found == 0) return -1;   //current parent process doesn't have child process. invalid!
+    else {
       insert_to_blocked_queue(current);
       schedule();
       return -2;
-    // }
-  } else {
-    return -1;
+    }     //there exists a child process without ZOMBIE status
   }
-  return 0;
+  else if (pid < NPROC) {     //a possibly valid specified child process
+    if (procs[pid].parent != current) return -1;//child process with input pid isn't current parent process's child
+    else {
+      if (procs[pid].status == ZOMBIE) {
+        procs[pid].status = FREE;
+        return pid;
+      }
+      else {
+        insert_to_blocked_queue(current);
+        schedule();
+        return -2;
+    }  
+    }
+  }
+  else return -1;   //invalid inputs
 }
 
 void insert_to_blocked_queue(process *proc) 
