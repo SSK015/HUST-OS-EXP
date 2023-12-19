@@ -25,6 +25,20 @@ typedef struct elf_header_t {
   uint16 shstrndx;  /* Section header string table index */
 } elf_header;
 
+// section header
+typedef struct {
+  uint32 sh_name;      /* Section name (string tbl index) */
+  uint32 sh_type;      /* Section type */
+  uint64 sh_flags;     /* Section flags */
+  uint64 sh_addr;      /* Section virtual addr at execution */
+  uint64 sh_offset;    /* Section file offset */
+  uint64 sh_size;      /* Section size in bytes */
+  uint32 sh_link;      /* Link to another section */
+  uint32 sh_info;      /* Additional section information */
+  uint64 sh_addralign; /* Section alignment */
+  uint64 sh_entsize;   /* Entry size if section holds table */
+} elf_section_header;
+
 // Program segment header.
 typedef struct elf_prog_header_t {
   uint32 type;   /* Segment type */
@@ -39,6 +53,10 @@ typedef struct elf_prog_header_t {
 
 #define ELF_MAGIC 0x464C457FU  // "\x7FELF" in little endian
 #define ELF_PROG_LOAD 1
+#define SHT_SYMTAB 2           /* Symbol table */
+#define SHT_STRTAB 3           /* String table */
+#define STT_FILE 4             /* Symbol's name is file name */
+#define STT_FUNC 18            /* Symbol's name is function name*/
 
 typedef enum elf_status_t {
   EL_OK = 0,
@@ -50,13 +68,26 @@ typedef enum elf_status_t {
 
 } elf_status;
 
+typedef struct elf_symbol{
+  uint32 st_name;         
+  unsigned char st_info;  
+  unsigned char st_other; 
+  uint16 st_shndx;        
+  uint64 st_value;        
+  uint64 st_size;         
+} elf_symbol_rec;
+
 typedef struct elf_ctx_t {
   void *info;
   elf_header ehdr;
+  char strtb[4096];
+  elf_symbol_rec syms[128];
+  uint64 syms_count;
 } elf_ctx;
 
 elf_status elf_init(elf_ctx *ctx, void *info);
 elf_status elf_load(elf_ctx *ctx);
+elf_status elf_load_symbol(elf_ctx *ctx);
 
 void load_bincode_from_host_elf(process *p);
 
