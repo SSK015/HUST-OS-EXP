@@ -80,14 +80,16 @@ typedef struct elf_symbol{
 typedef struct elf_ctx_t {
   void *info;
   elf_header ehdr;
-  char strtb[4096];
-  elf_symbol_rec syms[128];
-  uint64 syms_count;
 } elf_ctx;
 
+typedef struct elf_backtracer_t {
+  char strtb[4096];
+  elf_symbol_rec syms[256];
+  uint64 syms_count;
+} elf_backtracer;
+
 elf_status elf_init(elf_ctx *ctx, void *info);
-elf_status elf_load(elf_ctx *ctx);
-elf_status elf_load_symbol(elf_ctx *ctx);
+elf_status elf_load(elf_ctx *ctx, elf_backtracer* backtrace);
 
 void load_bincode_from_host_elf(process *p);
 

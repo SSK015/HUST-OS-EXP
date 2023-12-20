@@ -14,7 +14,7 @@
 
 #include "spike_interface/spike_utils.h"
 
-extern elf_ctx elfsymbol;
+extern elf_backtracer elfbacksymbol;
 
 //
 // implement the SYS_user_print syscall
@@ -36,13 +36,13 @@ ssize_t sys_user_exit(uint64 code) {
 
 int getSymOffset(uint64 ra)
 {
-  uint64 closest_func = 0;
+  uint64 func = 0;
   int idx = -1;
-  for (int i = 0; i < elfsymbol.syms_count; i++)
+  for (int i = 0; i < elfbacksymbol.syms_count; i++)
   {
-    if (elfsymbol.syms[i].st_info == STT_FUNC && elfsymbol.syms[i].st_value < ra && elfsymbol.syms[i].st_value > closest_func)
+    if (elfbacksymbol.syms[i].st_info == STT_FUNC && elfbacksymbol.syms[i].st_value < ra && elfbacksymbol.syms[i].st_value > func)
     {
-      closest_func = elfsymbol.syms[i].st_value;
+      func = elfbacksymbol.syms[i].st_value;
       idx = i;
     }
   }
@@ -60,7 +60,9 @@ ssize_t sys_user_backtrace(uint64 level) {
         sprint("Error\n");
         continue;
       }
-    sprint("%s\n", &elfsymbol.strtb[elfsymbol.syms[symbol_idx].st_name]);    
+      uint32 nameOffset = elfbacksymbol.syms[symbol_idx].st_name;
+      sprint("%s\n",
+             &elfbacksymbol.strtb[nameOffset]);
   }
   return 0;
 }

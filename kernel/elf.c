@@ -14,6 +14,7 @@ typedef struct elf_info_t {
 } elf_info;
 
 elf_ctx elfsymbol;
+elf_backtracer elfbacksymbol;
 
 //
 // the implementation of allocater. allocates memory space for later segment loading
@@ -52,12 +53,12 @@ elf_status elf_init(elf_ctx *ctx, void *info) {
 //
 // load the elf segments to memory regions as we are in Bare mode in lab1
 //
-elf_status elf_load(elf_ctx *ctx) {
-  // elf_prog_header structure is defined in kernel/elf.h
-  elf_prog_header ph_addr;
-  int i, off;
 
-  // traverse the elf program segment headers
+elf_status elf_load(elf_ctx *ctx, elf_backtracer* backtracer) {
+  elf_prog_header ph_addr;
+  elf_section_header sh;
+  int i, off;
+  int strsize = 0;
   for (i = 0, off = ctx->ehdr.phoff; i < ctx->ehdr.phnum; i++, off += sizeof(ph_addr)) {
     // read segment headers
     if (elf_fpread(ctx, (void *)&ph_addr, sizeof(ph_addr), off) != sizeof(ph_addr)) return EL_EIO;
@@ -70,12 +71,33 @@ elf_status elf_load(elf_ctx *ctx) {
     void *dest = elf_alloc_mb(ctx, ph_addr.vaddr, ph_addr.vaddr, ph_addr.memsz);
 
     // actual loading
-    if (elf_fpread(ctx, dest, ph_addr.memsz, ph_addr.off) != ph_addr.memsz)
+    if (elf_fpread(ctx, dest, ph_addr.memsz, ph_addr.off) != ph_addr.memsz) {
       return EL_EIO;
+    }
+      // return EL_EIO;
+  }
+  for (int i = 0, off = ctx->ehdr.shoff; i < ctx->ehdr.shnum;  ++i, off += sizeof(elf_section_header))
+    {
+      if (elf_fpread(ctx, (void *)&sh, sizeof(sh), off) != sizeof(sh)) return EL_EIO;
+      
+      if (sh.sh_type == SHT_SYMTAB)
+      {  
+        if (elf_fpread(ctx, &backtracer->syms, sh.sh_size, sh.sh_offset) != sh.sh_size)
+          return EL_EIO;
+        backtracer->syms_count = sh.sh_size / sizeof(elf_symbol_rec);
+      } 
+      else if (sh.sh_type == SHT_STRTAB)
+      {
+        if (elf_fpread(ctx, &backtracer->strtb + strsize, sh.sh_size, sh.sh_offset) != sh.sh_size)
+          return EL_EIO;
+        strsize += sh.sh_size;
+      }
   }
 
   return EL_OK;
 }
+
+
 
 typedef union {
   uint64 buf[MAX_CMDLINE_ARGS];
@@ -129,39 +151,10 @@ void load_bincode_from_host_elf(process *p) {
     panic("fail to init elfloader.\n");
 
   // load elf. elf_load() is defined above.
-  if (elf_load(&elfsymbol) != EL_OK) panic("Fail on loading elf.\n");
-
-  // entry (virtual, also physical in lab1_x) address
+  if (elf_load(&elfsymbol, &elfbacksymbol) != EL_OK) panic("Fail on loading backtrace symbols.\n");
   p->trapframe->epc = elfsymbol.ehdr.entry;
-
-  if (elf_load_symbol(&elfsymbol) != EL_OK) panic("Fail on loading elf symbols.\n");
   // close the host spike file
   spike_file_close( info.f );
 
   sprint("Application program entry point (virtual address): 0x%lx\n", p->trapframe->epc);
-}
-
-elf_status elf_load_symbol(elf_ctx *ctx) {
-  elf_section_header sh;
-  int i, off;
-  int strsize = 0;
-  for (int i = 0, off = ctx->ehdr.shoff; i < ctx->ehdr.shnum;  ++i, off += sizeof(elf_section_header))
-    {
-      if (elf_fpread(ctx, (void *)&sh, sizeof(sh), off) != sizeof(sh)) return EL_EIO;
-      if (sh.sh_type == SHT_SYMTAB)
-      {  
-        if (elf_fpread(ctx, &ctx->syms, sh.sh_size, sh.sh_offset) != sh.sh_size)
-          return EL_EIO;
-          
-        ctx->syms_count = sh.sh_size / sizeof(elf_symbol_rec);
-      } 
-      else if (sh.sh_type == SHT_STRTAB)
-      {
-        if (elf_fpread(ctx, &ctx->strtb + strsize, sh.sh_size, sh.sh_offset) != sh.sh_size)
-          return EL_EIO;
-        strsize += sh.sh_size;
-      }
-  }
-
-  return EL_OK;
 }

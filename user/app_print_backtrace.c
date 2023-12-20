@@ -5,18 +5,22 @@
 
 #include "user_lib.h"
 #include "util/types.h"
+void f1();
+void f2();
 
-void f8() { print_backtrace(7); }
-void f7() { f8(); }
-void f6() { f7(); }
-void f5() { f6(); }
-void f4() { f5(); }
-void f3() { f4(); }
-void f2() { f3(); }
-void f1() { f2(); }
+int deep;
+void f2() { f1(); }
+void f1() {
+  if(deep++ < 5)
+    f2();
+  else {
+    print_backtrace(7);
+  }
+}
 
 int main(void) {
   printu("back trace the user app in the following:\n");
+  deep = 0;
   f1();
   exit(0);
   return 0;
