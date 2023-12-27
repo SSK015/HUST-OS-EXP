@@ -4,6 +4,7 @@
 #include "spike_interface/spike_file.h"
 #include "util/types.h"
 #include "vfs.h"
+// #include "vmm.h"
 
 //
 // file operations
@@ -24,6 +25,7 @@ int do_closedir(int fd);
 int do_link(char *oldpath, char *newpath);
 int do_unlink(char *path);
 
+
 void fs_init(void);
 
 // data structure that manages all openned files in a PCB
@@ -36,5 +38,6 @@ typedef struct proc_file_management_t {
 proc_file_management *init_proc_file_management(void);
 
 void reclaim_proc_file_management(proc_file_management *pfiles);
+int do_cd(char *path);
 
 #endif
