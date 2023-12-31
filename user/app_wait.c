@@ -1,4 +1,4 @@
-/*
+ /*
  * This app fork a child process, and the child process fork a grandchild process.
  * every process waits for its own child exit then prints.                     
  * Three processes also write their own global variables "flag"
@@ -17,7 +17,14 @@ int main(void) {
         pid = fork();
         if (pid == 0) {
             flag = 2;
-            printu("Grandchild process end, flag = %d.\n", flag);
+            pid = fork();
+            if (pid == 0) {
+                flag = 3;
+                printu("Great-grandchild process end, flag = %d.\n", flag);
+            } else {
+                wait(pid);
+                printu("Grandchild process end, flag = %d.\n", flag);
+            }
         } else {
             wait(pid);
             printu("Child process end, flag = %d.\n", flag);
