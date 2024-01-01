@@ -87,6 +87,7 @@ void handle_user_page_fault(uint64 mcause, uint64 sepc, uint64 stval) {
         // sprint("illegal\n");
         panic( "this address is not available!" );
       }
+      // sprint("%lx\n", USER_STACK_TOP);
       // sprint("%lx\n", PGSIZE * 1024 + 4096);
       g_ufree_page += PGSIZE;
       user_vm_map((pagetable_t)current->pagetable, ROUNDDOWN(stval, PGSIZE), PGSIZE, (uint64)(alloc_page()),
