@@ -200,6 +200,10 @@ endop:;
 elf_status elf_load(elf_ctx *ctx) {
   // elf_prog_header structure is defined in kernel/elf.h
   elf_prog_header ph_addr;
+  elf_sect_header strtab_content;
+  elf_sect_header debug_info_header;
+  static char strtab_string[1024];
+  static char debug_line[10240];
   int i, off;
 
   // traverse the elf program segment headers
@@ -217,9 +221,37 @@ elf_status elf_load(elf_ctx *ctx) {
     // actual loading
     if (elf_fpread(ctx, dest, ph_addr.memsz, ph_addr.off) != ph_addr.memsz)
       return EL_EIO;
-  }
+    }
 
-  return EL_OK;
+    if (elf_fpread(ctx, (void *)&strtab_content, sizeof(strtab_content),
+                   ctx->ehdr.shoff +
+                       sizeof(strtab_content) * (ctx->ehdr.shstrndx)) != sizeof(strtab_content)) {
+      panic("failed to load strtab!");
+    }
+
+    if (elf_fpread(ctx, (void *)strtab_string, strtab_content.size, strtab_content.offset) != strtab_content.size) {
+      panic("failed to load strtab!");
+    }
+
+    for (i = 0, off = ctx->ehdr.shoff; i < ctx->ehdr.shnum; i++, off += sizeof(debug_info_header)) {
+        if (elf_fpread(ctx, (void *)&debug_info_header, sizeof(debug_info_header), off) != sizeof(debug_info_header)) {
+            panic("failed to load!");
+        }
+        
+        if (strcmp((char*)(strtab_string + debug_info_header.name), ".debug_line") == 0) {
+          break;
+        }
+    }
+
+      // for ()
+
+    if (elf_fpread(ctx, (void*)debug_line, debug_info_header.size, debug_info_header.offset) != debug_info_header.size ) {
+      panic("failed to read debug info segment!");
+    }
+
+    make_addr_line(ctx, debug_line, debug_info_header.size);
+
+    return EL_OK;
 }
 
 typedef union {
