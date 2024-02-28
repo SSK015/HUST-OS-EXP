@@ -13,7 +13,9 @@ typedef struct trapframe_t {
   /* offset:256 */ uint64 kernel_trap;
   // saved user process counter
   /* offset:264 */ uint64 epc;
-}trapframe;
+  // int fucker;s
+  uint64 hartid;
+} trapframe;
 
 // the extremely simple definition of process, used for begining labs of PKE
 typedef struct process_t {
@@ -23,7 +25,7 @@ typedef struct process_t {
   trapframe* trapframe;
 }process;
 
-void switch_to(process*);
+void switch_to(process*, uint64 hartid);
 
 extern process* current;
 

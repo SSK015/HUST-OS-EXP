@@ -25,7 +25,7 @@ process* current = NULL;
 //
 // switch to a user-mode process
 //
-void switch_to(process* proc) {
+void switch_to(process* proc, uint64 hartid) {
   assert(proc);
   current = proc;
 

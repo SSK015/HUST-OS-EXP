@@ -63,6 +63,7 @@ void smode_trap_handler(void) {
   assert(current);
   // save user process counter.
   current->trapframe->epc = read_csr(sepc);
+    // int cpuid = read_csr(mhartid);
 
   // if the cause of trap is syscall from user application.
   // read_csr() and CAUSE_USER_ECALL are macros defined in kernel/riscv.h
@@ -79,6 +80,7 @@ void smode_trap_handler(void) {
     panic( "unexpected exception happened.\n" );
   }
 
+  uint64 cpuid = read_tp();
   // continue (come back to) the execution of current process.
-  switch_to(current);
+  switch_to(current, cpuid);
 }

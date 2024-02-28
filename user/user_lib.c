@@ -49,3 +49,7 @@ int printu(const char* s, ...) {
 int exit(int code) {
   return do_user_call(SYS_user_exit, code, 0, 0, 0, 0, 0, 0); 
 }
+
+int gethartid() {
+  return do_user_call(SYS_user_hartid, 0, 0, 0, 0, 0, 0, 0); 
+}
