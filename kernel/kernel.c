@@ -14,6 +14,7 @@ extern int global_hartid1;
 
 // process is a structure defined in kernel/process.h
 process user_app;
+process other_user;
 
 //
 // load the elf, and construct a "process" (with only a trapframe).
@@ -22,11 +23,18 @@ process user_app;
 void load_user_program(process *proc, uint64 hartid) {
   // USER_TRAP_FRAME is a physical address defined in kernel/config.h
   proc->trapframe = (trapframe *)(USER_TRAP_FRAME + hartid * 4 * 16  * 16 * 16 * 16 * 16 * 16);
+  // proc->trapframe = (trapframe *)(USER_TRAP_FRAME);
   memset(proc->trapframe, 0, sizeof(trapframe));
   proc->trapframe->hartid = hartid;
   // USER_KSTACK is also a physical address defined in kernel/config.h
   proc->kstack = USER_KSTACK + hartid * 4 * 16  * 16 * 16 * 16 * 16 * 16;
+
+  // sprint("XXX%x\n", proc->kstack);
+  // proc->kstack = USER_KSTACK;
   proc->trapframe->regs.sp = USER_STACK + hartid * 4 * 16  * 16 * 16 * 16 * 16 * 16;
+  proc->trapframe->regs.tp = hartid;
+
+  // proc->trapframe->regs.sp = USER_STACK;
 
   // load_bincode_from_host_elf() is defined in kernel/elf.c
   load_bincode_from_host_elf(proc, hartid);
@@ -64,14 +72,30 @@ int s_start(void) {
 
   // the application code (elf) is first loaded into memory, and then put into
   // execution
-  load_user_program(&user_app, cpuid);
+  if (cpuid == 0) {
+    load_user_program(&user_app, cpuid);
+    // write_csr(satp, 0);
+    // write_tp(cpuid);
+    // sprint("reach here0\n");
+  } else if (cpuid == 1) {
+    load_user_program(&other_user, cpuid);
+    // sprint("reach here1\n");
+  
+  }
+
   // int cpuid = read_csr(sscratch);
   // hartid;
 
 
+
   sprint("hartid = %d: Switch to user mode...\n", cpuid);
   // switch_to() is defined in kernel/process.c
-  switch_to(&user_app, cpuid);
+  if (cpuid == 0) {
+    switch_to(&user_app, cpuid);
+  } else if (cpuid == 1) {
+    switch_to(&other_user, cpuid);
+  }
+
 
   // we should never reach here.
   return 0;

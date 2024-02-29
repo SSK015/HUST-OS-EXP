@@ -6,6 +6,7 @@
 #include "kernel/riscv.h"
 #include "kernel/config.h"
 #include "spike_interface/spike_utils.h"
+#include "kernel/sync_utils.h"
 
 //
 // global variables are placed in the .data section.
@@ -23,7 +24,7 @@ int32 is_initial = 0;
 int32 is_finish = 0;
 int32 finish_again = 0;
 
-
+int counter0 = 0;
 
 // sstart() is the supervisor state entry point defined in kernel/kernel.c
 extern void s_start();
@@ -110,6 +111,8 @@ void m_start(uintptr_t hartid, uintptr_t dtb) {
     // init_dtb() is defined above.
     init_dtb(dtb);
 
+    sync_barrier(&counter0, 2);
+
     sprint("In m_start, hartid:%d\n", hartid);
 
     // uint64 cpuid = read_tp();
@@ -123,7 +126,7 @@ void m_start(uintptr_t hartid, uintptr_t dtb) {
     // }
 
 
-    global_hartid0 = hartid;
+    // global_hartid0 = hartid;
 
     // sprint("In m_start, global_hartid:%d\n", global_hartid1);
 
@@ -153,35 +156,26 @@ void m_start(uintptr_t hartid, uintptr_t dtb) {
     // init timing. added @lab1_3
 
     timerinit(hartid);
-    is_initial = 1;
-    while (is_finish != 1) {
-      ;
-    }
+    // is_initial = 1;
+    // while (is_finish != 1) {
+    //   ;
+    // }
 
     // switch to supervisor mode (S mode) and jump to s_start(), i.e., set pc to mepc
-    finish_again = 1;
+    // finish_again = 1;
     // asm volatile("mret");
+    // sync_barrier(&counter0, 2);
 
   } else {
-    while (is_initial != 1) {
-      // sprint("I am waiting\n");
-      ;
-    }
-    sprint("In m_start, hartid:%d\n", hartid);
-
-    // global_hartid1 = hartid;
-
-    // sprint("In m_start, global_hartid:%d\n", global_hartid);
-
-    // uint64 cpuid = read_tp();
-
-    // if (cpuid == 1) {
-    //   sprint("xsxsxs wer%d\n", hartid);
-    // } else if (cpuid == 0) {
-    //   sprint("0000000\n");
-    // } else {
-    //   sprint("111111\n");
+    // while (is_initial != 1) {
+    //   // sprint("I am waiting\n");
+    //   ;
     // }
+
+
+
+    sync_barrier(&counter0, 2);
+    sprint("In m_start, hartid:%d\n", hartid);
 
     // save the address of trap frame for interrupt in M mode to "mscratch". added @lab1_2
     write_csr(mscratch, &g_itrframe);
@@ -209,10 +203,12 @@ void m_start(uintptr_t hartid, uintptr_t dtb) {
     // init timing. added @lab1_3
     timerinit(hartid);
 
-    is_finish = 1;
-    while (finish_again != 1) {
-      ;
-    }
+    // sync_barrier(&counter0, 2);
+
+    // is_finish = 1;
+    // while (finish_again != 1) {
+    //   ;
+    // }
     // switch to supervisor mode (S mode) and jump to s_start(), i.e., set pc to mepc
 
   }

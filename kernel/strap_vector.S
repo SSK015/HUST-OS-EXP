@@ -54,10 +54,13 @@ return_to_user:
     # let [t6]=[a0]
     addi t6, a0, 0
 
+    
+
     # restore_all_registers is a assembly macro defined in util/load_store.S.
     # the macro restores all registers from trapframe started from [t6] to all general
     # purpose registers, so as to resort the execution of a process.
     restore_all_registers 
 
+    
     # return to user mode and user pc.
     sret

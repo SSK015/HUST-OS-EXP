@@ -21,21 +21,32 @@ extern void return_to_user(trapframe*);
 
 // current points to the currently running user-mode application.
 process* current = NULL;
+process *currentOther = NULL;
 
 //
 // switch to a user-mode process
 //
 void switch_to(process* proc, uint64 hartid) {
   assert(proc);
-  current = proc;
+
+  if (hartid == 0) {
+    current = proc;
+  } else if (hartid == 1) {
+    currentOther = proc;
+    // current = proc;
+  }
 
   // write the smode_trap_vector (64-bit func. address) defined in kernel/strap_vector.S
   // to the stvec privilege register, such that trap handler pointed by smode_trap_vector
   // will be triggered when an interrupt occurs in S mode.
   write_csr(stvec, (uint64)smode_trap_vector);
 
+
   // set up trapframe values (in process structure) that smode_trap_vector will need when
   // the process next re-enters the kernel.
+
+
+
   proc->trapframe->kernel_sp = proc->kstack;  // process's kernel stack
   proc->trapframe->kernel_trap = (uint64)smode_trap_handler;
 
@@ -51,6 +62,11 @@ void switch_to(process* proc, uint64 hartid) {
   // set S Exception Program Counter (sepc register) to the elf entry pc.
   write_csr(sepc, proc->trapframe->epc);
 
+
+  // uint64 cpuid = read_tp();
+  // sprint("CPU id is %d\n", cpuid);  
+
   // return_to_user() is defined in kernel/strap_vector.S. switch to user mode with sret.
   return_to_user(proc->trapframe);
+    // write_tp(hartid);
 }

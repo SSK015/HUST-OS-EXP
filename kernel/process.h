@@ -28,5 +28,6 @@ typedef struct process_t {
 void switch_to(process*, uint64 hartid);
 
 extern process* current;
+extern process* currentOther;
 
 #endif
