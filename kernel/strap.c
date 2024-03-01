@@ -37,14 +37,29 @@ static void handle_syscall(trapframe *tf) {
 
 //
 // global variable that store the recorded "ticks". added @lab1_3
-static uint64 g_ticks = 0;
+static uint64 g_ticks0 = 0;
+static uint64 g_ticks1 = 0;
 //
 // added @lab1_3
 //
-void handle_mtimer_trap() {
-  sprint("Ticks %d\n", g_ticks);
+void handle_mtimer_trap0() {
+  sprint("Ticks %d\n", g_ticks0);
   // TODO (lab1_3): increase g_ticks to record this "tick", and then clear the "SIP"
-  g_ticks++;
+  g_ticks0++;
+
+  // field in sip register.
+  // write_csr
+  // hint: use write_csr to disable the SIP_SSIP bit in sip.
+  int aaa = read_csr(sip);
+  write_csr(sip, ~(aaa & 2));
+  // panic( "lab1_3: increase g_ticks by one, and clear SIP field in sip register.\n" );
+
+}
+
+void handle_mtimer_trap1() {
+  sprint("Ticks %d\n", g_ticks1);
+  // TODO (lab1_3): increase g_ticks to record this "tick", and then clear the "SIP"
+  g_ticks1++;
 
   // field in sip register.
   // write_csr
@@ -100,11 +115,27 @@ void handle_user_page_fault(uint64 mcause, uint64 sepc, uint64 stval) {
 void smode_trap_handler(void) {
   // make sure we are in User mode before entering the trap handling.
   // we will consider other previous case in lab1_3 (interrupt).
-  if ((read_csr(sstatus) & SSTATUS_SPP) != 0) panic("usertrap: not from user mode");
+  // uint64 cpuid = read_tp();
+  // if ((read_csr(sstatus) & SSTATUS_SPP) != 0)
+  //   panic("usertrap: not from user mode");
 
-  assert(current);
-  // save user process counter.
-  current->trapframe->epc = read_csr(sepc);
+  // assert(current);
+  // // save user process counter.
+  // current->trapframe->epc = read_csr(sepc);
+
+
+  if ((read_csr(sstatus) & SSTATUS_SPP) != 0) panic("usertrap: not from user mode");
+  uint64 cpuid = read_tp();
+
+  if (cpuid == 0) {
+    assert(current);
+    // save user process counter.
+    current->trapframe->epc = read_csr(sepc);
+  } else if (cpuid == 1) {
+    assert(currentOther);
+    // save user process counter.
+    currentOther->trapframe->epc = read_csr(sepc);
+  }
 
   // if the cause of trap is syscall from user application.
   // read_csr() and CAUSE_USER_ECALL are macros defined in kernel/riscv.h
@@ -116,7 +147,12 @@ void smode_trap_handler(void) {
       handle_syscall(current->trapframe);
       break;
     case CAUSE_MTIMER_S_TRAP:
-      handle_mtimer_trap();
+      // handle_mtimer_trap();
+    if (cpuid == 0) {
+      handle_mtimer_trap0();
+    } else if (cpuid == 1) {
+      handle_mtimer_trap1();
+    }
       break;
     case CAUSE_STORE_PAGE_FAULT:
     case CAUSE_LOAD_PAGE_FAULT:
@@ -132,5 +168,5 @@ void smode_trap_handler(void) {
   }
 
   // continue (come back to) the execution of current process.
-  switch_to(current);
+  switch_to(current, cpuid);
 }

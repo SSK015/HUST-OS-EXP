@@ -20,6 +20,7 @@ _mentry:
     la sp, stack0		# stack0 is statically defined in kernel/machine/minit.c 
     li a3, 4096			# 4096-byte stack
     csrr a4, mhartid	# [mhartid] = core ID
+    csrr tp, mhartid
     addi a4, a4, 1
     mul a3, a3, a4
     add sp, sp, a3		# re-arrange the stack points so that they don't overlap

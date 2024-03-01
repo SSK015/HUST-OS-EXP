@@ -23,6 +23,7 @@ extern void return_to_user(trapframe *, uint64 satp);
 
 // current points to the currently running user-mode application.
 process* current = NULL;
+process *currentOther = NULL;
 
 // points to the first free page in our simple heap. added @lab2_2
 uint64 g_ufree_page = USER_FREE_ADDRESS_START;
@@ -30,7 +31,7 @@ uint64 g_ufree_page = USER_FREE_ADDRESS_START;
 //
 // switch to a user-mode process
 //
-void switch_to(process* proc) {
+void switch_to(process* proc, uint64 hartid) {
   assert(proc);
   current = proc;
 
@@ -64,3 +65,6 @@ void switch_to(process* proc) {
   // note, return_to_user takes two parameters @ and after lab2_1.
   return_to_user(proc->trapframe, user_satp);
 }
+
+
+// spike -p2 ./obj/riscv-pke ./obj/app_alloc0 ./obj/app_alloc1

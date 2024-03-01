@@ -6,6 +6,7 @@
 #include "kernel/riscv.h"
 #include "kernel/config.h"
 #include "spike_interface/spike_utils.h"
+#include "kernel/sync_utils.h"
 
 //
 // global variables are placed in the .data section.
@@ -16,6 +17,8 @@
 // labs.
 //
 __attribute__((aligned(16))) char stack0[4096 * NCPU];
+
+int counter0 = 0;
 
 // sstart() is the supervisor state entry point defined in kernel/kernel.c
 extern void s_start();
@@ -89,44 +92,164 @@ void timerinit(uintptr_t hartid) {
 
 //
 // m_start: machine mode C entry point.
-//
+// //
+// void m_start(uintptr_t hartid, uintptr_t dtb) {
+//   // init the spike file interface (stdin,stdout,stderr)
+//   // functions with "spike_" prefix are all defined in codes under spike_interface/,
+//   // sprint is also defined in spike_interface/spike_utils.c
+//   spike_file_init();
+//   sprint("In m_start, hartid:%d\n", hartid);
+
+//   // init HTIF (Host-Target InterFace) and memory by using the Device Table Blob (DTB)
+//   // init_dtb() is defined above.
+//   init_dtb(dtb);
+
+//   // save the address of trap frame for interrupt in M mode to "mscratch". added @lab1_2
+//   write_csr(mscratch, &g_itrframe);
+
+//   // set previous privilege mode to S (Supervisor), and will enter S mode after 'mret'
+//   // write_csr is a macro defined in kernel/riscv.h
+//   write_csr(mstatus, ((read_csr(mstatus) & ~MSTATUS_MPP_MASK) | MSTATUS_MPP_S));
+
+//   // set M Exception Program Counter to sstart, for mret (requires gcc -mcmodel=medany)
+//   write_csr(mepc, (uint64)s_start);
+
+//   // setup trap handling vector for machine mode. added @lab1_2
+//   write_csr(mtvec, (uint64)mtrapvec);
+
+//   // enable machine-mode interrupts. added @lab1_3
+//   write_csr(mstatus, read_csr(mstatus) | MSTATUS_MIE);
+
+//   // delegate all interrupts and exceptions to supervisor mode.
+//   // delegate_traps() is defined above.
+//   delegate_traps();
+
+//   // also enables interrupt handling in supervisor mode. added @lab1_3
+//   write_csr(sie, read_csr(sie) | SIE_SEIE | SIE_STIE | SIE_SSIE);
+
+//   // init timing. added @lab1_3
+//   timerinit(hartid);
+
+//   // switch to supervisor mode (S mode) and jump to s_start(), i.e., set pc to mepc
+//   asm volatile("mret");
+// }
+
 void m_start(uintptr_t hartid, uintptr_t dtb) {
-  // init the spike file interface (stdin,stdout,stderr)
-  // functions with "spike_" prefix are all defined in codes under spike_interface/,
-  // sprint is also defined in spike_interface/spike_utils.c
-  spike_file_init();
-  sprint("In m_start, hartid:%d\n", hartid);
+  if (hartid == 0) {
+    // init the spike file interface (stdin,stdout,stderr)
+    // functions with "spike_" prefix are all defined in codes under spike_interface/,
+    // sprint is also defined in spike_interface/spike_utils.c
+    spike_file_init();
 
-  // init HTIF (Host-Target InterFace) and memory by using the Device Table Blob (DTB)
-  // init_dtb() is defined above.
-  init_dtb(dtb);
 
-  // save the address of trap frame for interrupt in M mode to "mscratch". added @lab1_2
-  write_csr(mscratch, &g_itrframe);
+    // init HTIF (Host-Target InterFace) and memory by using the Device Table Blob (DTB)
+    // init_dtb() is defined above.
+    init_dtb(dtb);
 
-  // set previous privilege mode to S (Supervisor), and will enter S mode after 'mret'
-  // write_csr is a macro defined in kernel/riscv.h
-  write_csr(mstatus, ((read_csr(mstatus) & ~MSTATUS_MPP_MASK) | MSTATUS_MPP_S));
+    sync_barrier(&counter0, 2);
 
-  // set M Exception Program Counter to sstart, for mret (requires gcc -mcmodel=medany)
-  write_csr(mepc, (uint64)s_start);
+    sprint("In m_start, hartid:%d\n", hartid);
 
-  // setup trap handling vector for machine mode. added @lab1_2
-  write_csr(mtvec, (uint64)mtrapvec);
+    // uint64 cpuid = read_tp();
 
-  // enable machine-mode interrupts. added @lab1_3
-  write_csr(mstatus, read_csr(mstatus) | MSTATUS_MIE);
+    // if (cpuid == 1) {
+    //   sprint("xsxsxs weqr%d\n", hartid);
+    // } else if (cpuid == 0) {
+    //   sprint("0000000 weqr %d\n", hartid);
+    // } else {
+    //   sprint("111111\n");
+    // }
 
-  // delegate all interrupts and exceptions to supervisor mode.
-  // delegate_traps() is defined above.
-  delegate_traps();
 
-  // also enables interrupt handling in supervisor mode. added @lab1_3
-  write_csr(sie, read_csr(sie) | SIE_SEIE | SIE_STIE | SIE_SSIE);
+    // global_hartid0 = hartid;
 
-  // init timing. added @lab1_3
-  timerinit(hartid);
+    // sprint("In m_start, global_hartid:%d\n", global_hartid1);
 
-  // switch to supervisor mode (S mode) and jump to s_start(), i.e., set pc to mepc
+    // save the address of trap frame for interrupt in M mode to "mscratch". added @lab1_2
+    write_csr(mscratch, &g_itrframe);
+
+    // set previous privilege mode to S (Supervisor), and will enter S mode after 'mret'
+    // write_csr is a macro defined in kernel/riscv.h
+    write_csr(mstatus, ((read_csr(mstatus) & ~MSTATUS_MPP_MASK) | MSTATUS_MPP_S));
+
+    // set M Exception Program Counter to sstart, for mret (requires gcc -mcmodel=medany)
+    write_csr(mepc, (uint64)s_start);
+
+    // setup trap handling vector for machine mode. added @lab1_2
+    write_csr(mtvec, (uint64)mtrapvec);
+
+    // enable machine-mode interrupts. added @lab1_3
+    write_csr(mstatus, read_csr(mstatus) | MSTATUS_MIE);
+
+    // delegate all interrupts and exceptions to supervisor mode.
+    // delegate_traps() is defined above.
+    delegate_traps();
+
+    // also enables interrupt handling in supervisor mode. added @lab1_3
+    write_csr(sie, read_csr(sie) | SIE_SEIE | SIE_STIE | SIE_SSIE);
+
+    // init timing. added @lab1_3
+
+    timerinit(hartid);
+    // is_initial = 1;
+    // while (is_finish != 1) {
+    //   ;
+    // }
+
+    // switch to supervisor mode (S mode) and jump to s_start(), i.e., set pc to mepc
+    // finish_again = 1;
+    // asm volatile("mret");
+    // sync_barrier(&counter0, 2);
+
+  } else {
+    // while (is_initial != 1) {
+    //   // sprint("I am waiting\n");
+    //   ;
+    // }
+
+
+
+    sync_barrier(&counter0, 2);
+    sprint("In m_start, hartid:%d\n", hartid);
+
+    // save the address of trap frame for interrupt in M mode to "mscratch". added @lab1_2
+    write_csr(mscratch, &g_itrframe);
+
+    // set previous privilege mode to S (Supervisor), and will enter S mode after 'mret'
+    // write_csr is a macro defined in kernel/riscv.h
+    write_csr(mstatus, ((read_csr(mstatus) & ~MSTATUS_MPP_MASK) | MSTATUS_MPP_S));
+
+    // set M Exception Program Counter to sstart, for mret (requires gcc -mcmodel=medany)
+    write_csr(mepc, (uint64)s_start);
+
+    // setup trap handling vector for machine mode. added @lab1_2
+    write_csr(mtvec, (uint64)mtrapvec);
+
+    // enable machine-mode interrupts. added @lab1_3
+    write_csr(mstatus, read_csr(mstatus) | MSTATUS_MIE);
+
+    // delegate all interrupts and exceptions to supervisor mode.
+    // delegate_traps() is defined above.
+    delegate_traps();
+
+    // also enables interrupt handling in supervisor mode. added @lab1_3
+    write_csr(sie, read_csr(sie) | SIE_SEIE | SIE_STIE | SIE_SSIE);
+
+    // init timing. added @lab1_3
+    timerinit(hartid);
+
+    // sync_barrier(&counter0, 2);
+
+    // is_finish = 1;
+    // while (finish_again != 1) {
+    //   ;
+    // }
+    // switch to supervisor mode (S mode) and jump to s_start(), i.e., set pc to mepc
+
+  }
+
+
+
   asm volatile("mret");
+  // sprint("test\n");
 }
