@@ -106,6 +106,7 @@ ssize_t sys_user_exit(uint64 code) {
   //     ;
   // }
   if (cpuid == 0) {
+    sprint("hartid = %d: shutdown with code:%d.\n", cpuid, code);
     shutdown(code);
   }
 
