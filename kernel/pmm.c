@@ -40,7 +40,7 @@ extern uint64 g_mem_size;
 static uint64 free_mem_start_addr;  //beginning address of free memory
 static uint64 free_mem_end_addr;    //end address of free memory (not included)
 
-int vm_alloc_stage[NCPU] = { 0 }; // 0 for kernel alloc, 1 for user alloc
+int vm_alloc_stage[NCPU] = { 0, 0 }; // 0 for kernel alloc, 1 for user alloc
 typedef struct node {
   struct node *next;
 } list_node;
@@ -84,9 +84,9 @@ void *alloc_page(void) {
   spinlock_lock(&my_lock);
   list_node *n = g_free_mem_list.next;
   uint64 hartid = read_tp();
-  
+
   if (vm_alloc_stage[hartid]) {
-    sprint("hartid = %ld: alloc page 0x%x\n", hartid, n);
+    sprint("hartid = %d: alloc page 0x%x\n", hartid, n);
   }
   if (n) g_free_mem_list.next = n->next;
   spinlock_unlock(&my_lock);

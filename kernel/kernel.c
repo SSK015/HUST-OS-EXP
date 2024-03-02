@@ -176,7 +176,7 @@ int s_start(void) {
   
 
 
-  sprint("hartid = %d: Switch to user mode...\n", hartid);
+  // sprint("hartid = %d: Switch to user mode...\n", hartid);
   
 
   // switch_to() is defined in kernel/process.c
