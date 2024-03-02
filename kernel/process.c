@@ -33,7 +33,13 @@ uint64 g_ufree_page = USER_FREE_ADDRESS_START;
 //
 void switch_to(process* proc, uint64 hartid) {
   assert(proc);
-  current = proc;
+
+  if (hartid == 0) {
+    current = proc;
+  } else if (hartid == 1) {
+    currentOther = proc;
+    // current = proc;
+  }
 
   // write the smode_trap_vector (64-bit func. address) defined in kernel/strap_vector.S
   // to the stvec privilege register, such that trap handler pointed by smode_trap_vector
@@ -60,6 +66,7 @@ void switch_to(process* proc, uint64 hartid) {
 
   // make user page table. macro MAKE_SATP is defined in kernel/riscv.h. added @lab2_1
   uint64 user_satp = MAKE_SATP(proc->pagetable);
+  vm_alloc_stage[hartid] = 1;
 
   // return_to_user() is defined in kernel/strap_vector.S. switch to user mode with sret.
   // note, return_to_user takes two parameters @ and after lab2_1.

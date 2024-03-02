@@ -6,6 +6,31 @@
 #include "memlayout.h"
 #include "spike_interface/spike_utils.h"
 
+// 自旋锁结构体
+typedef struct {
+    volatile uint32_t lock; // volatile 用于防止编译器对锁的优化
+} spinlock_t;
+
+// 初始化自旋锁
+void spinlock_init(spinlock_t *lock) {
+    lock->lock = 0;
+}
+
+// 获取自旋锁
+void spinlock_lock(spinlock_t *lock) {
+    while (__atomic_exchange_n(&lock->lock, 1, __ATOMIC_ACQUIRE) == 1) {
+        // 如果锁已被占用，继续自旋等待
+        // 这里使用 __atomic_exchange_n 是为了保证原子操作
+    }
+}
+
+// 释放自旋锁
+void spinlock_unlock(spinlock_t *lock) {
+    __atomic_store_n(&lock->lock, 0, __ATOMIC_RELEASE);
+}
+
+spinlock_t my_lock;
+
 // _end is defined in kernel/kernel.lds, it marks the ending (virtual) address of PKE kernel
 extern char _end[];
 // g_mem_size is defined in spike_interface/spike_memory.c, it indicates the size of our
@@ -37,6 +62,8 @@ static void create_freepage_list(uint64 start, uint64 end) {
 // place a physical page at *pa to the free list of g_free_mem_list (to reclaim the page)
 //
 void free_page(void *pa) {
+  // spinlock_init(&my_lock);
+  spinlock_lock(&my_lock);
   if (((uint64)pa % PGSIZE) != 0 || (uint64)pa < free_mem_start_addr || (uint64)pa >= free_mem_end_addr)
     panic("free_page 0x%lx \n", pa);
 
@@ -44,6 +71,7 @@ void free_page(void *pa) {
   list_node *n = (list_node *)pa;
   n->next = g_free_mem_list.next;
   g_free_mem_list.next = n;
+  spinlock_unlock(&my_lock);
 }
 
 //
@@ -51,12 +79,15 @@ void free_page(void *pa) {
 // Allocates only ONE page!
 //
 void *alloc_page(void) {
+  // spinlock_init(&my_lock);
+  spinlock_lock(&my_lock);
   list_node *n = g_free_mem_list.next;
-  uint64 hartid = 0;
+  uint64 hartid = read_tp();
   if (vm_alloc_stage[hartid]) {
     sprint("hartid = %ld: alloc page 0x%x\n", hartid, n);
   }
   if (n) g_free_mem_list.next = n->next;
+  spinlock_unlock(&my_lock);
   return (void *)n;
 }
 
@@ -70,6 +101,7 @@ void pmm_init() {
   uint64 g_kernel_end = (uint64)&_end;
 
   uint64 pke_kernel_size = g_kernel_end - g_kernel_start;
+  spinlock_init(&my_lock);
   sprint("PKE kernel start 0x%lx, PKE kernel end: 0x%lx, PKE kernel size: 0x%lx .\n",
     g_kernel_start, g_kernel_end, pke_kernel_size);
 
