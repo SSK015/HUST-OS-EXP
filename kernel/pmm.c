@@ -62,7 +62,8 @@ static void create_freepage_list(uint64 start, uint64 end) {
 // place a physical page at *pa to the free list of g_free_mem_list (to reclaim the page)
 //
 void free_page(void *pa) {
-  // spinlock_init(&my_lock);
+  // 
+  
   spinlock_lock(&my_lock);
   if (((uint64)pa % PGSIZE) != 0 || (uint64)pa < free_mem_start_addr || (uint64)pa >= free_mem_end_addr)
     panic("free_page 0x%lx \n", pa);
@@ -83,6 +84,7 @@ void *alloc_page(void) {
   spinlock_lock(&my_lock);
   list_node *n = g_free_mem_list.next;
   uint64 hartid = read_tp();
+  
   if (vm_alloc_stage[hartid]) {
     sprint("hartid = %ld: alloc page 0x%x\n", hartid, n);
   }
