@@ -16,6 +16,33 @@
 #include "kernel/sync_utils.h"
 
 int counter = 0;
+int counterp = 0;
+int isinit = 0;
+
+typedef struct {
+    volatile uint32_t lock; // volatile 用于防止编译器对锁的优化
+} spinlock_t1;// 自旋锁结构体
+
+// 初始化自旋锁
+void spinlock1_init(spinlock_t1 *lock) {
+    lock->lock = 0;
+}
+
+// 获取自旋锁
+void spinlock1_lock(spinlock_t1 *lock) {
+    while (__atomic_exchange_n(&lock->lock, 1, __ATOMIC_ACQUIRE) == 1) {
+        // 如果锁已被占用，继续自旋等待
+        // 这里使用 __atomic_exchange_n 是为了保证原子操作
+    }
+}
+
+// 释放自旋锁
+void spinlock1_unlock(spinlock_t1 *lock) {
+    __atomic_store_n(&lock->lock, 0, __ATOMIC_RELEASE);
+}
+
+spinlock_t1 new_lock;
+
 
 //
 // implement the SYS_user_print syscall
@@ -23,9 +50,20 @@ int counter = 0;
 ssize_t sys_user_print(const char* buf, size_t n) {
   // buf is now an address in user space of the given app's user stack,
   // so we have to transfer it into phisical address (kernel is running in direct mapping).
-  assert( current );
-  char* pa = (char*)user_va_to_pa((pagetable_t)(current->pagetable), (void*)buf);
-  sprint(pa);
+  int cpuid = read_tp();
+  if (cpuid == 0) {
+    assert(current);
+
+    char* pa = (char*)user_va_to_pa((pagetable_t)(current->pagetable), (void*)buf);
+      sprint(pa);
+  } else if (cpuid == 1) {
+    assert(currentOther);
+
+    char* pa = (char*)user_va_to_pa((pagetable_t)(currentOther->pagetable), (void*)buf);
+    sprint(pa);
+  }
+
+
   return 0;
 }
 
@@ -59,22 +97,61 @@ ssize_t sys_user_exit(uint64 code) {
 // maybe, the simplest implementation of malloc in the world ... added @lab2_2
 //
 uint64 sys_user_allocate_page() {
+  // if (isinit == 0) {
+  //   isinit = 1;
+  //   spinlock1_init(&new_lock);
+
+  // }
 
   int cpuid = read_tp();
+  // spinlock1_lock(&new_lock);
+      sprint("hartid = %d: User exit with code:%d.\n", cpuid, 0);
   void *pa = alloc_page();
-  uint64 va = g_ufree_page;
-  g_ufree_page += PGSIZE;
-  user_vm_map((pagetable_t)current->pagetable, va, PGSIZE, (uint64)pa,
+
+  // sync_barrier();
+  // sync_barrier(&counterp, 1);
+  // spinlock1_lock(&new_lock);
+
+  uint64 va;
+  // if (cpuid )
+  if (cpuid == 0) {
+    va = g_ufree_page;
+    g_ufree_page += PGSIZE;
+
+
+
+  } else if (cpuid == 1) {
+    va = g_ufree_page_other;
+    g_ufree_page_other += PGSIZE;    
+  }
+
+
+  // spinlock1_unlock(&new_lock);
+  if (cpuid == 0) {
+      user_vm_map((pagetable_t)current->pagetable, va, PGSIZE, (uint64)pa,
          prot_to_type(PROT_WRITE | PROT_READ, 1));
+  } else {
+      user_vm_map((pagetable_t)currentOther->pagetable, va, PGSIZE, (uint64)pa,
+         prot_to_type(PROT_WRITE | PROT_READ, 1));
+  }
+
   sprint("hartid = %d: vaddr 0x%x is mapped to paddr 0x%x\n", cpuid, va, pa);
+  // counterp = 0;
+  // spinlock1_unlock(&new_lock);
   return va;
+  // return 0;
 }
 
 //
 // reclaim a page, indicated by "va". added @lab2_2
 //
 uint64 sys_user_free_page(uint64 va) {
-  user_vm_unmap((pagetable_t)current->pagetable, va, PGSIZE, 1);
+  int cpuid = read_tp();
+  if (cpuid == 0) {
+    user_vm_unmap((pagetable_t)current->pagetable, va, PGSIZE, 1);
+  } else if (cpuid == 1) {
+    user_vm_unmap((pagetable_t)currentOther->pagetable, va, PGSIZE, 1);
+  }
   return 0;
 }
 

@@ -76,24 +76,44 @@ void handle_mtimer_trap1() {
 // stval: the virtual address that causes pagefault when being accessed.
 //
 void handle_user_page_fault(uint64 mcause, uint64 sepc, uint64 stval) {
+  
   sprint("handle_page_fault: %lx\n", stval);
   switch (mcause) {
     case CAUSE_STORE_PAGE_FAULT:
+      int cpuid = read_tp();
+      // sprint("CPUid = %d\n", cpuid);
       // TODO (lab2_3): implement the operations that solve the page fault to
       // dynamically increase application stack.
-      // hint: first allocate a new physical page, and then, maps the new page to the
-      // virtual address that causes the page fault.
-      // void* pa = alloc_page();
-      // uint64 va = g_ufree_page;
-      // stval += PGSIZE;
+      // hint: first allocate a new physical page, and then, maps the new page
+      // to the virtual address that causes the page fault. void* pa =
+      // alloc_page(); uint64 va = g_ufree_page; stval += PGSIZE;
       // user_vm_map((pagetable_t)current->pagetable, stval, PGSIZE, (uint64)pa,
       //       prot_to_type(PROT_WRITE | PROT_READ, 1));
       // void* pa = alloc_page();
       // uint64 va = stval;
       // USER_STACK_TOP += PGSIZE;
-      g_ufree_page += PGSIZE;
-      user_vm_map((pagetable_t)current->pagetable, ROUNDDOWN(stval, PGSIZE), PGSIZE, (uint64)(alloc_page()),
+      if (cpuid == 0) {
+        g_ufree_page += PGSIZE;
+      } else if (cpuid == 1) {
+        g_ufree_page_other += PGSIZE;
+      }
+
+      sprint("start\n");
+      void *pa = alloc_page();
+      sprint("end\n");
+      if (cpuid == 0) {
+      user_vm_map((pagetable_t)current->pagetable, ROUNDDOWN(stval, PGSIZE), PGSIZE, (uint64)(pa),
             prot_to_type(PROT_WRITE | PROT_READ, 1));
+      } else if (cpuid == 1) {
+      user_vm_map((pagetable_t)currentOther->pagetable, ROUNDDOWN(stval, PGSIZE), PGSIZE, (uint64)(pa),
+            prot_to_type(PROT_WRITE | PROT_READ, 1));
+      }
+
+        // void* pa = alloc_page();
+      
+        // user_vm_map((pagetable_t)current->pagetable, stval, 1, (uint64)pa,
+        //  prot_to_type(PROT_WRITE | PROT_READ, 1));
+
       // uint64 va = stval;
       // stval += PGSIZE;
         // user_vm_map((pagetable_t)proc->pagetable, USER_STACK_TOP - PGSIZE, PGSIZE, user_stack,
@@ -144,7 +164,12 @@ void smode_trap_handler(void) {
   // use switch-case instead of if-else, as there are many cases since lab2_3.
   switch (cause) {
     case CAUSE_USER_ECALL:
-      handle_syscall(current->trapframe);
+      if (cpuid == 0) {
+        handle_syscall(current->trapframe);
+      } else if (cpuid == 1) {
+        handle_syscall(currentOther->trapframe);
+      }
+
       break;
     case CAUSE_MTIMER_S_TRAP:
       // handle_mtimer_trap();
@@ -168,5 +193,11 @@ void smode_trap_handler(void) {
   }
 
   // continue (come back to) the execution of current process.
-  switch_to(current, cpuid);
+  if (cpuid == 0) {
+    switch_to(current, cpuid);
+    // sprint("goto0\n");
+  } else if (cpuid == 1) {
+    switch_to(currentOther, cpuid);
+    // sprint("goto1\n");
+  }
 }

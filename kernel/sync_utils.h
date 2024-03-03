@@ -1,6 +1,8 @@
 #ifndef _SYNC_UTILS_H_
 #define _SYNC_UTILS_H_
 
+
+
 static inline void sync_barrier(volatile int *counter, int all) {
 
   int local;
