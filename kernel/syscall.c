@@ -105,7 +105,7 @@ uint64 sys_user_allocate_page() {
 
   int cpuid = read_tp();
   // spinlock1_lock(&new_lock);
-      sprint("hartid = %d: User exit with code:%d.\n", cpuid, 0);
+      // sprint("hartid = %d: User exit with code:%d.\n", cpuid, 0);
   void *pa = alloc_page();
 
   // sync_barrier();

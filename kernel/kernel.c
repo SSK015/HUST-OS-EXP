@@ -60,7 +60,7 @@ void load_user_program(process *proc, uint64 hartid) {
 
   // USER_STACK_TOP = 0x7ffff000, defined in kernel/memlayout.h
   proc->trapframe->regs.sp = USER_STACK_TOP;  //virtual address of user stack top
-
+  proc->trapframe->regs.tp = hartid; 
 
   sprint("hartid = %d: user frame 0x%lx, user stack 0x%lx, user kstack 0x%lx \n", hartid, proc->trapframe,
          proc->trapframe->regs.sp, proc->kstack);
@@ -232,9 +232,9 @@ int s_start(void) {
     // while (1)
       // ;
   } else if (cpuid == 1) {
-    // switch_to(&other_user, cpuid);
-    while(1)
-      ;
+    switch_to(&other_user, cpuid);
+    // while(1)
+      // ;
   }
 
   // we should never reach here.

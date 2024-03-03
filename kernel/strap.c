@@ -146,7 +146,7 @@ void smode_trap_handler(void) {
 
   if ((read_csr(sstatus) & SSTATUS_SPP) != 0) panic("usertrap: not from user mode");
   uint64 cpuid = read_tp();
-  sprint("CPUID ISI IS IS %d\n", cpuid);
+  // sprint("CPUID ISI IS IS %d\n", cpuid);
   if (cpuid == 0) {
     assert(current);
 
