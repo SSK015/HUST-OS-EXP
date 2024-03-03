@@ -106,4 +106,15 @@ int do_fork(process* parent);
 // current running process
 extern process* current;
 
+#define SEM_MAX 32
+typedef struct semphore{
+  int signal;
+  process *waiting_queue;
+}semphore;
+long do_sem_new(int resource);
+void do_sem_P(int mutex);
+void do_sem_V(int mutex);
+void insert_to_waiting_queue(int mutex);
+
+
 #endif
