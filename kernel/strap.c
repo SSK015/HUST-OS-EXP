@@ -146,9 +146,10 @@ void smode_trap_handler(void) {
 
   if ((read_csr(sstatus) & SSTATUS_SPP) != 0) panic("usertrap: not from user mode");
   uint64 cpuid = read_tp();
-
+  sprint("CPUID ISI IS IS %d\n", cpuid);
   if (cpuid == 0) {
     assert(current);
+
     // save user process counter.
     current->trapframe->epc = read_csr(sepc);
   } else if (cpuid == 1) {
@@ -173,11 +174,11 @@ void smode_trap_handler(void) {
       break;
     case CAUSE_MTIMER_S_TRAP:
       // handle_mtimer_trap();
-    if (cpuid == 0) {
-      handle_mtimer_trap0();
-    } else if (cpuid == 1) {
-      handle_mtimer_trap1();
-    }
+      if (cpuid == 0) {
+        handle_mtimer_trap0();
+      } else if (cpuid == 1) {
+        handle_mtimer_trap1();
+      }
       break;
     case CAUSE_STORE_PAGE_FAULT:
     case CAUSE_LOAD_PAGE_FAULT:

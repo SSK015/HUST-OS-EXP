@@ -229,8 +229,12 @@ int s_start(void) {
   // switch_to() is defined in kernel/process.c
   if (cpuid == 0) {
     switch_to(&user_app, cpuid);
+    // while (1)
+      // ;
   } else if (cpuid == 1) {
-    switch_to(&other_user, cpuid);
+    // switch_to(&other_user, cpuid);
+    while(1)
+      ;
   }
 
   // we should never reach here.

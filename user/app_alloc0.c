@@ -10,9 +10,9 @@ int main(void) {
 
   for (int i = 0; i < N; i++) {
     p[i] = naive_malloc();
-    // printu("=== user alloc 0 @ vaddr 0x%x\n", p[i]);
+    printu("=== user alloc 0 @ vaddr 0x%x\n", p[i]);
     // sprint("kali\n");
-    printu("I am a %d", 1);
+    // printu("I am a %d", 1);
     int *pi = p[i];
     *pi = BASE + i;
     // printu("=== user alloc 0 @ vaddr 0x%x\n", p[i]);
