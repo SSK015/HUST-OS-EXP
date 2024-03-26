@@ -162,10 +162,10 @@ void *user_va_to_pa(pagetable_t page_dir, void *va)
   // (va & (1<<PGSHIFT -1)) means computing the offset of "va" inside its page.
   // Also, it is possible that "va" is not mapped at all. in such case, we can find
   // invalid PTE, and should return NULL.
-  uint64 pa = lookup_pa(page_dir, (uint64)va); // 利用lookup_pa函数找到va对应的pa
+  uint64 pa = lookup_pa(page_dir, (uint64)va); 
   if ((void *)pa == NULL)
     return NULL;
-  pa += ((uint64)va) & ((1 << PGSHIFT) - 1); // 计算偏移量
+  pa += ((uint64)va) & ((1 << PGSHIFT) - 1);
   return (void *)pa;
 
   
@@ -199,7 +199,7 @@ void user_vm_unmap(pagetable_t page_dir, uint64 va, uint64 size, int free)
   if (free)
   {
     pte_t *pte = page_walk(page_dir, va, 0); // traverse the page table (starting from page_dir) to find the corresponding pte of va.
-    if (*pte)                                // 需要判断pte是否存在
+    if (*pte)
     {
       free_page((void *)PTE2PA(*pte));
       *pte = *pte & (~PTE_V);
@@ -236,7 +236,7 @@ void heap_copy_on_write(process *child, process *parent, uint64 pa) {
       panic("error when looking up heap block pa!");
     }
     if(heap_block_pa >= pa && heap_block_pa < pa + PGSIZE) {
-      user_vm_unmap(child->pagetable, heap_block, PGSIZE, 0); // 取消映射
+      user_vm_unmap(child->pagetable, heap_block, PGSIZE, 0); 
       void *pa = alloc_page();
       if ((void *)pa == NULL)
         panic("Can not allocate a new physical page.\n");
@@ -244,8 +244,8 @@ void heap_copy_on_write(process *child, process *parent, uint64 pa) {
       if(child_pte == NULL) {
         panic("error when mapping heap segment!");
       }
-      *child_pte |= (~PTE_C); // 设置写时复制标志，为已复制
-      *child_pte &= PTE_W | PTE_R;    // 设置读写权限
+      *child_pte |= (~PTE_C); 
+      *child_pte &= PTE_W | PTE_R;   
       user_vm_map(child->pagetable, heap_block, PGSIZE, (uint64)pa, prot_to_type(PROT_WRITE | PROT_READ, 1));
       // sprint("do_fork map heap segment at pa:%lx of parent to child at va:%lx.\n", pa, heap_block);
       memcpy(pa, (void *)lookup_pa(parent->pagetable, heap_block), PGSIZE);
